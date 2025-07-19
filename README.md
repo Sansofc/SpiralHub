@@ -1,23 +1,19 @@
-# HouseCatHub
--- HouseCatHub by ChatGPT
+-- HouseCatHub Final - Feito por ChatGPT
 
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local RS = game:GetService("RunService")
 local player = Players.LocalPlayer
-local mouse = player:GetMouse()
-
 local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
 gui.Name = "HouseCatHubUI"
 gui.ResetOnSpawn = false
 
-local mainButton = Instance.new("TextButton")
+local mainButton = Instance.new("TextButton", gui)
 mainButton.Text = "😸"
 mainButton.Size = UDim2.new(0, 50, 0, 50)
 mainButton.Position = UDim2.new(0, 10, 1, -60)
 mainButton.BackgroundColor3 = Color3.fromRGB(255, 200, 0)
 mainButton.TextScaled = true
-mainButton.Parent = gui
 mainButton.Draggable = true
 mainButton.Active = true
 
@@ -65,7 +61,7 @@ aurasContent.Visible = false
 
 local ActiveScripts = {}
 
-local function createToggle(parent, name, toggleFunc)
+local function createToggle(parent, name, url, scriptId)
 	local container = Instance.new("Frame", parent)
 	container.Size = UDim2.new(1, -10, 0, 50)
 	container.BackgroundTransparency = 1
@@ -92,15 +88,55 @@ local function createToggle(parent, name, toggleFunc)
 	offBtn.TextColor3 = Color3.new(1,1,1)
 
 	onBtn.MouseButton1Click:Connect(function()
-		toggleFunc("on")
+		if scriptId == "infjump" then
+			ActiveScripts["infjump"] = UIS.JumpRequest:Connect(function()
+				local h = player.Character and player.Character:FindFirstChildWhichIsA("Humanoid")
+				if h then h:ChangeState(Enum.HumanoidStateType.Jumping) end
+			end)
+		elseif scriptId == "noclip" then
+			ActiveScripts["noclip"] = RS.Stepped:Connect(function()
+				local char = player.Character
+				if char then
+					for _, part in pairs(char:GetDescendants()) do
+						if part:IsA("BasePart") then
+							part.CanCollide = false
+						end
+					end
+				end
+			end)
+		elseif scriptId == "esp" then
+			loadstring(game:HttpGet(url))()
+		else
+			pcall(function() loadstring(game:HttpGet(url))() end)
+		end
 	end)
 
 	offBtn.MouseButton1Click:Connect(function()
-		toggleFunc("off")
+		if scriptId == "infjump" and ActiveScripts["infjump"] then
+			ActiveScripts["infjump"]:Disconnect()
+			ActiveScripts["infjump"] = nil
+		elseif scriptId == "noclip" and ActiveScripts["noclip"] then
+			ActiveScripts["noclip"]:Disconnect()
+			ActiveScripts["noclip"] = nil
+			local char = player.Character
+			if char then
+				for _, part in pairs(char:GetDescendants()) do
+					if part:IsA("BasePart") then
+						part.CanCollide = true
+					end
+				end
+			end
+		elseif scriptId == "esp" then
+			for _, v in pairs(workspace:GetDescendants()) do
+				if v:IsA("BoxHandleAdornment") and v.Name == "ESP_BOX" then
+					v:Destroy()
+				end
+			end
+		end
 	end)
 end
 
-local function createExecButton(parent, name, func)
+local function createExecButton(parent, name, url)
 	local btn = Instance.new("TextButton", parent)
 	btn.Size = UDim2.new(1, -20, 0, 40)
 	btn.Text = name
@@ -108,79 +144,22 @@ local function createExecButton(parent, name, func)
 	btn.TextColor3 = Color3.new(1,1,1)
 	btn.Position = UDim2.new(0, 10, 0, 0)
 	btn.AutoButtonColor = true
-	btn.MouseButton1Click:Connect(func)
+	btn.MouseButton1Click:Connect(function()
+		pcall(function()
+			loadstring(game:HttpGet(url))()
+		end)
+	end)
 end
 
--- ESP
-createToggle(mainContent, "ESP Players", function(toggle)
-	if toggle == "on" then
-		loadstring(game:HttpGet("https://raw.githubusercontent.com/Sansofc/Esp-players/refs/heads/main/README.md"))()
-	else
-		for _, v in pairs(workspace:GetDescendants()) do
-			if v:IsA("BoxHandleAdornment") and v.Name == "ESP_BOX" then
-				v:Destroy()
-			end
-		end
-	end
-end)
-
--- Fly (executa direto)
-createExecButton(mainContent, "Fly Test", function()
-	loadstring(game:HttpGet("https://github.com/Sinister-Scripts/Roblox-Exploits/raw/refs/heads/main/FE-Animated-Mobile-Fly"))()
-end)
-
--- Inf Jump
-createToggle(mainContent, "Inf Jump", function(toggle)
-	if toggle == "on" then
-		ActiveScripts["infjump"] = UIS.JumpRequest:Connect(function()
-			local h = player.Character and player.Character:FindFirstChildWhichIsA("Humanoid")
-			if h then h:ChangeState(Enum.HumanoidStateType.Jumping) end
-		end)
-	else
-		if ActiveScripts["infjump"] then
-			ActiveScripts["infjump"]:Disconnect()
-			ActiveScripts["infjump"] = nil
-		end
-	end
-end)
-
--- Noclip
-createToggle(mainContent, "Noclip", function(toggle)
-	if toggle == "on" then
-		ActiveScripts["noclip"] = RS.Stepped:Connect(function()
-			local char = player.Character
-			if char then
-				for _, part in pairs(char:GetDescendants()) do
-					if part:IsA("BasePart") then
-						part.CanCollide = false
-					end
-				end
-			end
-		end)
-	else
-		if ActiveScripts["noclip"] then
-			ActiveScripts["noclip"]:Disconnect()
-			ActiveScripts["noclip"] = nil
-		end
-		local char = player.Character
-		if char then
-			for _, part in pairs(char:GetDescendants()) do
-				if part:IsA("BasePart") then
-					part.CanCollide = true
-				end
-			end
-		end
-	end
-end)
+-- Main
+createToggle(mainContent, "ESP Players", "https://raw.githubusercontent.com/Sansofc/Esp-players/refs/heads/main/README.md", "esp")
+createExecButton(mainContent, "Fly Test", "https://github.com/Sinister-Scripts/Roblox-Exploits/raw/refs/heads/main/FE-Animated-Mobile-Fly")
+createToggle(mainContent, "Inf Jump", "https://raw.githubusercontent.com/Sansofc/Inf-jump/refs/heads/main/README.md", "infjump")
+createToggle(mainContent, "Noclip", "https://raw.githubusercontent.com/Sansofc/Noclip/refs/heads/main/README.md", "noclip")
 
 -- Auras
-createExecButton(aurasContent, "Loki", function()
-	warn("Loki Aura executada") -- coloque efeitos aqui
-end)
-
-createExecButton(aurasContent, "Ender", function()
-	warn("Ender Aura executada") -- coloque efeitos aqui
-end)
+createExecButton(aurasContent, "Loki", "https://raw.githubusercontent.com/Sansofc/Loki/refs/heads/main/README.md")
+createExecButton(aurasContent, "Ender", "https://raw.githubusercontent.com/Sansofc/Ender-TP/refs/heads/main/README.md")
 
 mainTab.MouseButton1Click:Connect(function()
 	mainContent.Visible = true
